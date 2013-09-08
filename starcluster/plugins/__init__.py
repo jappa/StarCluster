@@ -19,6 +19,7 @@ __all__ = [
     'sge',
     'condor',
     'users',
+    'useradmin',
     'ipcluster',
     'hadoop',
     'tmux',
