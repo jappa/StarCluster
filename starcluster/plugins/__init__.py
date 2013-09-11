@@ -20,6 +20,7 @@ __all__ = [
     'condor',
     'users',
     'useradmin',
+    'terminationsns',
     'ipcluster',
     'hadoop',
     'tmux',
