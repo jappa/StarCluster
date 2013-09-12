@@ -38,23 +38,25 @@ script_template="""
 #
 
 export AWS_CONFIG_FILE=%(aws_config)s
-#export AWS_ACCESS_KEY_ID=%(aws_access_key)s
-#export AWS_SECRET_ACCESS_KEY=%{aws_secret_key)s
 export AWS_DEFAULT_REGION=%(aws_region)s # config file not picking up region for some reason
-sudo -E aws sns publish Ñtopic-arn %(topic_arn)s Ñmessage Ò%(sns_message)sÓ
+sudo -E aws sns publish --topic-arn=%(topic_arn)s --message="%(sns_message)s"
 sleep 3 # make sure the message has time to send
 
 exit 0
 """
 
 aws_config="""
-echo "[default]
+[default]
 AWS_ACCESS_KEY_ID=%(aws_access_key)s
-AWS_SECRET_ACCESS_KEY=%{aws_secret_key)s" > /etc/default/sns_config
+AWS_SECRET_ACCESS_KEY=%(aws_secret_key)s
 """
 
 add_service_cmd="""
-sudo update-rc.d ec2-shutdown start 10 0 6 .
+sudo chmod +x /etc/init.d/ec2-shutdown; sudo update-rc.d ec2-shutdown start 10 0 6 .
+"""
+
+install_awscli_cmd="""
+sudo pip install awscli
 """
 
 
@@ -82,6 +84,9 @@ class TerminationSNS(clustersetup.DefaultClusterSetup):
     
     def _install_service(self,node):
         node.ssh.execute(add_service_cmd)
+    
+    def _install_awscli(self,node):
+        node.ssh.execute(install_awscli_cmd)
     
     def _write_aws_config(self,node):
         nconn = node.ssh
@@ -122,6 +127,11 @@ class TerminationSNS(clustersetup.DefaultClusterSetup):
             
         for node in nodes:
             self.pool.simple_job(self._write_init_script,(node),
+                                 jobid=node.alias)
+        self.pool.wait(len(nodes))
+        
+        for node in nodes:
+            self.pool.simple_job(self._install_awscli,(node),
                                  jobid=node.alias)
         self.pool.wait(len(nodes))
         
