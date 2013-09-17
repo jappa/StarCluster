@@ -39,7 +39,7 @@ script_template="""
 
 export AWS_CONFIG_FILE=%(aws_config)s
 export AWS_DEFAULT_REGION=%(aws_region)s # config file not picking up region for some reason
-sudo -E aws sns publish --topic-arn=%(topic_arn)s --message="%(sns_message)s"
+sudo -E aws sns publish --topic-arn=%(topic_arn)s --message=%(sns_message)s
 sleep 3 # make sure the message has time to send
 
 exit 0
