@@ -83,7 +83,7 @@ class SGEPlugin(clustersetup.DefaultClusterSetup):
         if exec_host:
             inst_sge += '-x '
         inst_sge += '-noremote -auto ./ec2_sge.conf'
-        node.ssh.execute(inst_sge, silent=True, only_printable=True)
+        node.ssh.execute(inst_sge, silent=False, only_printable=True)
 
     def _setup_sge(self):
         """
