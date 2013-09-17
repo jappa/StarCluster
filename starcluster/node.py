@@ -841,7 +841,7 @@ class Node(object):
                 attached_vols.pop(root_dev)
         return attached_vols
 
-    def detach_external_volumes(self):
+    def detach_external_volumes(self, delete_volume=False):
         """
         Detaches all volumes returned by self.attached_vols
         """
@@ -852,6 +852,12 @@ class Node(object):
             log.info("Detaching volume %s from %s" % (vol.id, self.alias))
             if vol.status not in ['available', 'detaching']:
                 vol.detach()
+                if delete_volume:
+                    while vol.update() != 'available':
+                        time.sleep(5)
+                    log.info("Deleting node %s's volume %s" % (self.alias,vol.id) )
+                    vol.delete()
+
 
     def delete_root_volume(self):
         """

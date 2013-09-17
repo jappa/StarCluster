@@ -1351,12 +1351,12 @@ class Cluster(object):
         for vol in wait_for_volumes:
             self.ec2.wait_for_volume(vol, state='attached')
 
-    def detach_volumes(self):
+    def detach_volumes(self, delete_vol=False):
         """
         Detach all volumes from all nodes
         """
         for node in self.nodes:
-            node.detach_external_volumes()
+            node.detach_external_volumes(delete_vol)
 
     @print_timing('Restarting cluster')
     def restart_cluster(self):
@@ -1410,7 +1410,7 @@ class Cluster(object):
         for node in nodes:
             node.shutdown()
 
-    def terminate_cluster(self, force=False):
+    def terminate_cluster(self, force=False, delete_vol=False):
         """
         Destroy this cluster by first detaching all volumes, shutting down all
         instances, canceling all spot requests (if any), removing its placement
@@ -1423,7 +1423,7 @@ class Cluster(object):
                 log.warn("Cannot run plugins: %s" % e)
             else:
                 raise
-        self.detach_volumes()
+        self.detach_volumes(delete_vol)
         nodes = self.nodes
         for node in nodes:
             node.terminate()
