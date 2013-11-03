@@ -1375,6 +1375,7 @@ class Cluster(object):
         """
         Detach all volumes from all nodes
         """
+        log.info("Detaching volumes...")
         for node in self.nodes:
             node.detach_external_volumes(delete_vol)
 

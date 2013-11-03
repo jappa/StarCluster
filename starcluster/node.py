@@ -851,7 +851,7 @@ class Node(object):
             vol = self.ec2.get_volume(vol_id)
             log.info("Detaching volume %s from %s" % (vol.id, self.alias))
             if vol.status not in ['available', 'detaching']:
-                vol.detach()
+                vol.detach(force=delete_volume)
                 if delete_volume:
                     while vol.update() != 'available':
                         time.sleep(5)
