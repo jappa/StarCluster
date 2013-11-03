@@ -29,6 +29,7 @@ from s3image import CmdS3Image
 from ebsimage import CmdEbsImage
 from downloadimage import CmdDownloadImage
 from createvolume import CmdCreateVolume
+from createvolumefromsnapshot import CmdCreateVolumeFromSnapshot
 from resizevolume import CmdResizeVolume
 from listkeypairs import CmdListKeyPairs
 from listzones import CmdListZones
@@ -81,6 +82,7 @@ all_cmds = [
     CmdDownloadImage(),
     CmdRemoveImage(),
     CmdCreateVolume(),
+    CmdCreateVolumeFromSnapshot(),
     CmdListVolumes(),
     CmdResizeVolume(),
     CmdRemoveVolume(),

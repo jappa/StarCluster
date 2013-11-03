@@ -455,23 +455,29 @@ class Cluster(object):
         the user-specified zone if it exists. Returns None if no volumes and no
         zone is specified.
         """
+        log.info("_get_cluster_zone")
+        
         zone = None
         if self.availability_zone:
             zone = self.ec2.get_zone(self.availability_zone)
         common_zone = None
         for volume in self.volumes:
             volid = self.volumes.get(volume).get('volume_id')
-            vol = self.ec2.get_volume(volid)
-            if not common_zone:
-                common_zone = vol.zone
-            elif vol.zone != common_zone:
-                vols = [self.volumes.get(v).get('volume_id')
-                        for v in self.volumes]
-                raise exception.VolumesZoneError(vols)
+            if 'snap' not in volid:
+                vol = self.ec2.get_volume(volid)
+                if not common_zone:
+                    common_zone = vol.zone
+                elif vol.zone != common_zone:
+                    vols = [self.volumes.get(v).get('volume_id')
+                            for v in self.volumes]
+                    raise exception.VolumesZoneError(vols)
         if common_zone and zone and zone.name != common_zone:
             raise exception.InvalidZone(zone.name, common_zone)
         if not zone and common_zone:
             zone = self.ec2.get_zone(common_zone)
+        
+        log.info("end _get_cluster_zone")
+
         return zone
 
     @property
@@ -563,6 +569,8 @@ class Cluster(object):
         Cluster object. Settings are loaded from cluster group tags and the
         master node's user data.
         """
+        
+        log.info("lood_receipt")
         try:
             tags = self.cluster_group.tags
             version = tags.get(static.VERSION_TAG, '')
@@ -1329,11 +1337,23 @@ class Cluster(object):
         """
         Attach each volume to the master node
         """
+        
+        log.info("attach_volumes_to_master")
         wait_for_volumes = []
         for vol in self.volumes:
             volume = self.volumes.get(vol)
             device = volume.get('device')
             vol_id = volume.get('volume_id')
+            
+            if 'snap' in vol_id:
+                from starcluster import volume as vl
+                snapshot_id = vol_id 
+                log.info("attach_volumes_to_master %s" % (snapshot_id))
+                zone = self._master.placement
+                vc = vl.VolumeCreator(self.ec2)
+                snapshot_vol = vc.create_from_snapshot(zone, snapshot_id)
+                vol_id = snapshot_vol.id
+ 
             vol = self.ec2.get_volume(vol_id)
             if vol.attach_data.instance_id == self.master_node.id:
                 log.info("Volume %s already attached to master...skipping" %
@@ -1976,20 +1996,24 @@ class ClusterValidator(validators.Validator):
         """
         Verify that all EBS volumes exist and are available.
         """
+        #log.info("validate_ebs_aws_settings")
         cluster = self.cluster
         for vol in cluster.volumes:
             v = cluster.volumes.get(vol)
             vol_id = v.get('volume_id')
-            vol = cluster.ec2.get_volume(vol_id)
-            if vol.status != 'available':
-                try:
-                    if vol.attach_data.instance_id == cluster.master_node.id:
-                        continue
-                except exception.MasterDoesNotExist:
-                    pass
-                raise exception.ClusterValidationError(
-                    "Volume '%s' is not available (status: %s)" %
-                    (vol_id, vol.status))
+            if 'snap' not in vol_id:
+                vol = cluster.ec2.get_volume(vol_id)
+                if vol.status != 'available':
+                    try:
+                        if vol.attach_data.instance_id == cluster.master_node.id:
+                            continue
+                    except exception.MasterDoesNotExist:
+                        pass
+                    raise exception.ClusterValidationError(
+                        "Volume '%s' is not available (status: %s)" %
+                        (vol_id, vol.status))
+        #log.info("end - validate_ebs_aws_settings")
+
 
     def validate_credentials(self):
         if not self.cluster.ec2.is_valid_conn():

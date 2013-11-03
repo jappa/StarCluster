@@ -308,6 +308,44 @@ class VolumeCreator(cluster.Cluster):
             raise
         finally:
             self._warn_about_volume_hosts()
+            
+    @print_timing("Creating volume from snapshot")
+    def create_from_snapshot(self, volume_zone, snapshot_id, volume_size = None, name=None, tags=None):
+        try:
+            
+            if not volume_size:
+                volume_size = self.ec2.get_snapshot(snapshot_id).volume_size
+            
+            self.validate(volume_size, volume_zone, self._aws_block_device)
+            #instance = self._request_instance(volume_zone)
+            #self._validate_required_progs([self._mkfs_cmd.split()[0]])
+            #self._determine_device()
+            vol = self._create_volume(volume_size, volume_zone, snapshot_id)
+            if tags:
+                for tag in tags:
+                    tagval = tags.get(tag)
+                    tagmsg = "Adding volume tag: %s" % tag
+                    if tagval:
+                        tagmsg += "=%s" % tagval
+                    log.info(tagmsg)
+                    vol.add_tag(tag, tagval)
+            if name:
+                vol.add_tag("Name", name)
+            #self._attach_volume(self._volume, instance.id,
+            #                    self._aws_block_device)
+            #self._get_volume_device(self._aws_block_device)
+            #self._format_volume()
+            #self.shutdown()
+            log.info("Your new %sGB volume %s has been created successfully" %
+                     (volume_size, vol.id))
+            return vol
+        except Exception:
+            log.error("Failed to create new volume")
+            self._delete_new_volume()
+            raise
+        finally:
+            self._warn_about_volume_hosts()
+            
 
     def _validate_resize(self, vol, size):
         self._validate_size(size)

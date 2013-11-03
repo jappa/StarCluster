@@ -26,7 +26,6 @@ from starcluster.utils import print_timing
 from starcluster.logger import log
 from starcluster import exception
 
-
 class ClusterSetup(object):
     """
     ClusterSetup Interface
@@ -274,11 +273,14 @@ class DefaultClusterSetup(ClusterSetup):
         Mount EBS volumes, if specified in ~/.starcluster/config to /home
         """
         # setup /etc/fstab on master to use block device if specified
+        log.info("_setup_ebs_volumes")
         master = self._master
         devices = master.get_device_map()
         for vol in self._volumes:
             vol = self._volumes[vol]
             vol_id = vol.get("volume_id")
+            
+            
             mount_path = vol.get('mount_path')
             device = vol.get("device")
             volume_partition = vol.get('partition')
